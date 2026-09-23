@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CST8410_InClassExamples</string>
+    <string name="hello_message">Bonjour a tous!</string>
+    <string name="goodbye_message">Au revoir!</string>
+</resources>
