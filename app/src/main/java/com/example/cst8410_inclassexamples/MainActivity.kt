@@ -1,6 +1,7 @@
 package com.example.cst8410_inclassexamples
 
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -42,7 +43,9 @@ class MainActivity : ComponentActivity() {
             Scaffold(modifier = Modifier.fillMaxSize(),
                 contentWindowInsets =WindowInsets.safeDrawing)
                 { innerPadding ->
-                    Greeting( name= "Eric", Modifier.padding(innerPadding))
+                    Greeting( name= "Eric", Modifier.padding(innerPadding)){
+                        // uncomment this: startActivity(Intent(this, SecondActivity::class.java))
+                    }
                 }
             })
         }
@@ -50,14 +53,14 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier)
+fun Greeting(name: String, modifier: Modifier = Modifier, onClickCallback: () -> Unit = { })
 {
   Column(verticalArrangement = Arrangement.SpaceAround,
       horizontalAlignment = Alignment.CenterHorizontally,
       modifier = modifier.fillMaxSize()
       )
   {
-      Button(onClick = {  }){
+      Button(onClick = onClickCallback ){
           Text("Click me!!")
       }
   }
