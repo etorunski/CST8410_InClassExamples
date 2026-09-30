@@ -1,9 +1,6 @@
 package com.example.cst8410_inclassexamples
 
-import android.content.Context
-import android.hardware.SensorManager
 import android.os.Bundle
-import android.provider.Settings.Global.putString
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -38,8 +35,6 @@ import java.util.Locale
 import java.util.Locale.getDefault
 
 class MainActivity : ComponentActivity() {
-
-
 
     fun printName(s1:String = "Hello", s2:String="World", stringModifier : (String)->String = { str:String -> str }):String
     {
@@ -90,10 +85,7 @@ fun Greeting(name: String,
               modifier=Modifier.fillMaxSize(0.25f)
           )//
       }
-
-
-
-  }
+     }
 }
 
 @Preview(showBackground = true)
