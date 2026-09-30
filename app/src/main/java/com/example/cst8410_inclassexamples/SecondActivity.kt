@@ -29,18 +29,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat.startActivity
-import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.ui.NavDisplay
 import com.example.cst8410_inclassexamples.ui.theme.CST8410_InClassExamplesTheme
-import kotlinx.serialization.Serializable
 
+class SecondActivity : ComponentActivity() {
 
-class MainActivity : ComponentActivity() {
-
-    val TAG = "MainActivity"
+    val TAG = "SecondActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +48,10 @@ class MainActivity : ComponentActivity() {
             Scaffold(modifier = Modifier.fillMaxSize(),
                 contentWindowInsets =WindowInsets.safeDrawing)
                 { innerPadding ->
-                    AppNavigation(modifier = Modifier.padding(innerPadding))
+                    Greeting( name= "Go Back",
+                        Modifier.padding(innerPadding)){
+                        finish() //goes back to previous
+                    }
                 }
             })
         }
@@ -89,62 +85,4 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Serializable
-data object HomeRoute : NavKey
-@Serializable
-data object SecondRoute : NavKey
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier, onClickCallback: () -> Unit = { })
-{
-      Column(verticalArrangement = Arrangement.SpaceAround,
-          horizontalAlignment = Alignment.CenterHorizontally,
-          modifier = modifier.fillMaxSize()
-          )
-  {
-      Button(onClick = {
-          onClickCallback() //invoke the function that is passed in
-      } ){
-          Text(name)
-      }
-  }
-}
-
-@Composable
-fun AppNavigation(modifier: Modifier = Modifier) {
-    //This variable is the Stack of NavKeys:
-    val backStack = rememberNavBackStack(HomeRoute)
-
-    //This Widget takes care of rendering the current page at the top of the stack:
-    NavDisplay(
-        backStack = backStack,
-        onBack = { backStack.removeLastOrNull() },
-        modifier = modifier,
-        entryProvider = { key -> //key is a navkey in your app
-
-            //When is the same as switch / case statements:
-            when (key) { // switch
-                is HomeRoute -> NavEntry(key) { //case, is ___ ->  XXXX
-                    Greeting(
-                        "go to second",
-                        modifier
-                    )
-                    {
-                        backStack.add(SecondRoute)//pushes a key to stack
-                    }
-                }
-
-                is SecondRoute -> NavEntry(key) {
-                    Greeting(
-                        "Go back",
-                        modifier
-                    )
-                    {
-                        backStack.removeLastOrNull()
-                    }
-                }
-                else -> error("Unknown route: $key")
-            }
-        }
-    )
-}
