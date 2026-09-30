@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -74,12 +75,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        Log.d("MainActivity", "onStop() called")
+        Log.d(TAG, "onStop() called")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d("MainActivity", "onDestroy() called")
+        Log.d(TAG, "onDestroy() called")
 
     }
 
@@ -89,25 +90,17 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Serializable
-data object HomeRoute : NavKey
-@Serializable
-data object SecondRoute : NavKey
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier, onClickCallback: () -> Unit = { })
-{
-      Column(verticalArrangement = Arrangement.SpaceAround,
-          horizontalAlignment = Alignment.CenterHorizontally,
-          modifier = modifier.fillMaxSize()
-          )
-  {
-      Button(onClick = {
-          onClickCallback() //invoke the function that is passed in
-      } ){
-          Text(name)
-      }
-  }
+fun DisplayText(modifier: Modifier = Modifier) {
+    var currentValue = remember {mutableStateOf("Hello world") }
+
+    Column {
+        Text(text = "The text is now: ${currentValue.value}", modifier = modifier)
+        TextField(
+            value = currentValue.value,
+            onValueChange = { newValue -> currentValue.value = newValue })
+    }
 }
 
 @Composable
@@ -125,26 +118,19 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             //When is the same as switch / case statements:
             when (key) { // switch
                 is HomeRoute -> NavEntry(key) { //case, is ___ ->  XXXX
-                    Greeting(
-                        "go to second",
-                        modifier
-                    )
-                    {
-                        backStack.add(SecondRoute)//pushes a key to stack
-                    }
+                    DisplayText()
                 }
 
                 is SecondRoute -> NavEntry(key) {
-                    Greeting(
-                        "Go back",
-                        modifier
-                    )
-                    {
-                        backStack.removeLastOrNull()
-                    }
+                    DisplayText()
                 }
                 else -> error("Unknown route: $key")
             }
         }
     )
 }
+
+@Serializable
+data object HomeRoute : NavKey
+@Serializable
+data object SecondRoute : NavKey
