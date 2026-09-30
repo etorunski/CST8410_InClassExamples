@@ -1,9 +1,6 @@
 package com.example.cst8410_inclassexamples
 
-import android.content.Context
-import android.hardware.SensorManager
 import android.os.Bundle
-import android.provider.Settings.Global.putString
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,28 +16,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.activity.viewModels
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.edit
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKeys
 import com.example.cst8410_inclassexamples.ui.theme.CST8410_InClassExamplesTheme
-import java.lang.Character.toUpperCase
-import java.util.Locale
+
 import java.util.Locale.getDefault
 
 class MainActivity : ComponentActivity() {
 
-
-
+    val name = "eric"
     fun printName(s1:String = "Hello", s2:String="World", stringModifier : (String)->String = { str:String -> str }):String
     {
         return stringModifier("String1 is $s1 and String2 is $s2")
@@ -90,10 +76,7 @@ fun Greeting(name: String,
               modifier=Modifier.fillMaxSize(0.25f)
           )//
       }
-
-
-
-  }
+     }
 }
 
 @Preview(showBackground = true)
