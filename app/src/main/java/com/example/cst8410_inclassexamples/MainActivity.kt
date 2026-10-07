@@ -25,12 +25,17 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextField
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.startActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -92,19 +97,47 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun DisplayText(modifier: Modifier = Modifier) {
-    var currentValue = remember {mutableStateOf("Hello world") }
+fun DisplayText(
+    textStateFlow: StateFlow<String>,
+    onTextChanged: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val textState by textStateFlow.collectAsStateWithLifecycle()
 
+    //initially showing, but changing it will redraw:
+    var isShowingDialog = remember {mutableStateOf(true)}
+    var agreeCollectData = remember{mutableStateOf(false) }
     Column {
-        Text(text = "The text is now: ${currentValue.value}", modifier = modifier)
+        Text(text = "The text is now: $textState", modifier = modifier)
         TextField(
-            value = currentValue.value,
-            onValueChange = { newValue -> currentValue.value = newValue })
+            label = { Text("Type Something here") },
+            value = textState,
+            onValueChange = onTextChanged
+        )
     }
+
+    if(isShowingDialog.value)
+    {
+        AlertDialog(
+            onDismissRequest = {isShowingDialog.value = false},
+            title = { Text(text = "Dialog Title") },
+            text = { Text("Here is a text ") },       //This below causes a recomposition
+            confirmButton = {  Button( onClick = {
+                agreeCollectData.value = true
+                isShowingDialog.value = false }) { Text("This is the Confirm Button")   }  },
+            dismissButton = {  Button( onClick = {
+                agreeCollectData.value = true
+                isShowingDialog.value = false }) {Text("This is the dismiss Button")    }  }
+        )
+    }
+
 }
 
 @Composable
-fun AppNavigation(modifier: Modifier = Modifier) {
+fun AppNavigation(
+    modifier: Modifier = Modifier,
+    viewModel: MainViewModel = viewModel()
+) {
     //This variable is the Stack of NavKeys:
     val backStack = rememberNavBackStack(HomeRoute)
 
@@ -118,11 +151,17 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             //When is the same as switch / case statements:
             when (key) { // switch
                 is HomeRoute -> NavEntry(key) { //case, is ___ ->  XXXX
-                    DisplayText()
+                    DisplayText(
+                        textStateFlow = viewModel.textState,
+                        onTextChanged = viewModel::onTextChanged
+                    )
                 }
 
                 is SecondRoute -> NavEntry(key) {
-                    DisplayText()
+                    DisplayText(
+                        textStateFlow = viewModel.textState,
+                        onTextChanged = viewModel::onTextChanged
+                    )
                 }
                 else -> error("Unknown route: $key")
             }
