@@ -1,7 +1,12 @@
 package com.example.cst8410_inclassexamples
 
 
+import android.content.Context
 import android.content.Intent
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -29,7 +34,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.lifecycle.viewmodel.compose.viewModel
+import android.hardware.SensorManager
+
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.painterResource
@@ -42,26 +48,79 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.cst8410_inclassexamples.ui.theme.CST8410_InClassExamplesTheme
 import kotlinx.serialization.Serializable
-
+import android.os.Build
+import android.provider.Settings
+import androidx.compose.runtime.MutableFloatState
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableFloatStateOf
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
 class MainActivity : ComponentActivity() {
+
+    fun isWifiSettingOn(context: Context): Boolean {
+        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        // as means casting
+
+        return wifiManager?.isWifiEnabled ?: false
+
+        // ? is a null check. If it's not null, do what comes after ?
+        // ?: is what to do in case it is null:   (obj)?.[ obj not null ] ?: [ if obj is null ]
+        // ?: is called the "Elvis" operator
+
+    }
+
+    fun openWifiPanel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val intent = Intent(Settings.Panel.ACTION_WIFI)
+            startActivity(intent)
+        } else {
+            // Fallback for older Android versions
+            startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+        }
+    }
 
     val TAG = "MainActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
 
         Log.d(TAG, "onCreate() called")
 
         enableEdgeToEdge()
         setContent {
 
+            val currentLight = remember { mutableFloatStateOf(0.0f) }
+
+            val lightSensorListener = object: SensorEventListener {
+                override fun onAccuracyChanged(
+                    sensor: Sensor?,
+                    accuracy: Int
+                ) {
+
+                }
+                override fun onSensorChanged(event: SensorEvent) { //array of the readings, 1 or 3 dimension
+                    //this is state, so cause a recomposition:
+                    currentLight.floatValue = event.values[0]
+                }
+            }
+
+            sensorManager.registerListener(lightSensorListener, lightSensor, SensorManager.SENSOR_DELAY_UI)
+
+
+        val isWifiOn = getWifiStateFlow().collectAsStateWithLifecycle(true)
         CST8410_InClassExamplesTheme(content=
         {
             Scaffold(modifier = Modifier.fillMaxSize(),
                 contentWindowInsets =WindowInsets.safeDrawing)
+
                 { innerPadding ->
-                    AppNavigation(modifier = Modifier.padding(innerPadding))
+                    AppNavigation( currentLight, modifier = Modifier.padding(innerPadding))
+                    {
+
+                    }
                 }
             })
         }
@@ -70,7 +129,6 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         Log.d(TAG, "onStart() called")
-
     }
 
     override fun onPause() {
@@ -95,48 +153,82 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
 fun DisplayText(
-    textStateFlow: StateFlow<String>,
-    onTextChanged: (String) -> Unit,
+    onClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val textState by textStateFlow.collectAsStateWithLifecycle()
-
     //initially showing, but changing it will redraw:
     var isShowingDialog = remember {mutableStateOf(true)}
     var agreeCollectData = remember{mutableStateOf(false) }
     Column {
-        Text(text = "The text is now: $textState", modifier = modifier)
-        TextField(
-            label = { Text("Type Something here") },
-            value = textState,
-            onValueChange = onTextChanged
-        )
-    }
+        Button(onClick = {
+           onClicked()
 
-    if(isShowingDialog.value)
-    {
-        AlertDialog(
-            onDismissRequest = {isShowingDialog.value = false},
-            title = { Text(text = "Dialog Title") },
-            text = { Text("Here is a text ") },       //This below causes a recomposition
-            confirmButton = {  Button( onClick = {
-                agreeCollectData.value = true
-                isShowingDialog.value = false }) { Text("This is the Confirm Button")   }  },
-            dismissButton = {  Button( onClick = {
-                agreeCollectData.value = true
-                isShowingDialog.value = false }) {Text("This is the dismiss Button")    }  }
-        )
+        }, modifier = modifier){
+            Text("CLick for wifi check")
+        }
     }
-
 }
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+private fun FeatureThatRequiresCameraPermission() {
+
+    // Multiple permissions state
+    val multiplePermissionsState = rememberMultiplePermissionsState(
+
+        //  List the permissions you need here:
+        permissions = listOf(
+            android.Manifest.permission.CAMERA,
+            android.Manifest.permission.RECORD_AUDIO
+        )
+    )
+
+    //If they have have all been granted:
+    if (multiplePermissionsState.allPermissionsGranted) {
+        Text("Camera and Audio permissions Granted")
+    } else {
+        Column {
+
+            // Should Show Rationale is the case when the user has rejected the permissions twice.
+            //Android will quietly not launch the permissions window even though you call launchMultiplePermissionRequest()
+            val textToShow = if (multiplePermissionsState.shouldShowRationale) {
+                "The camera and audio permissions are important for this app. Please grant the permissions."
+            } else {
+                // If it's the first time the user lands on this feature, or the user
+                // doesn't want to be asked again for this permission, explain that the
+                // permission is required
+                "Camera and audio permissions required for this feature to be available. " +
+                        "Please grant the permissions"
+            }
+            Text(textToShow)
+            Button(onClick = { multiplePermissionsState.launchMultiplePermissionRequest() }) {
+                Text("Request permissions")
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun previewDisplayLighting()
+{
+    val lightLevel =remember{ mutableFloatStateOf(1.05f)}
+    DisplayLighting(lightLevel, Modifier)
+}
+@Composable
+fun DisplayLighting(lightingLevel: MutableFloatState, modifier: Modifier = Modifier)
+{
+    Text("The light is ${lightingLevel.floatValue}", lineHeight = 50.sp, fontSize = 50.sp)
+}
+
 
 @Composable
 fun AppNavigation(
+    lightValue : MutableFloatState,
     modifier: Modifier = Modifier,
-    viewModel: MainViewModel = viewModel()
+    onClicked: () -> Unit
 ) {
     //This variable is the Stack of NavKeys:
     val backStack = rememberNavBackStack(HomeRoute)
@@ -151,16 +243,12 @@ fun AppNavigation(
             //When is the same as switch / case statements:
             when (key) { // switch
                 is HomeRoute -> NavEntry(key) { //case, is ___ ->  XXXX
-                    DisplayText(
-                        textStateFlow = viewModel.textState,
-                        onTextChanged = viewModel::onTextChanged
-                    )
+                    DisplayLighting(lightValue, modifier)
                 }
 
                 is SecondRoute -> NavEntry(key) {
                     DisplayText(
-                        textStateFlow = viewModel.textState,
-                        onTextChanged = viewModel::onTextChanged
+                        onClicked
                     )
                 }
                 else -> error("Unknown route: $key")
