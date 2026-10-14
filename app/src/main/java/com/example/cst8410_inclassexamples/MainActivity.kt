@@ -53,6 +53,7 @@ import android.provider.Settings
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.platform.LocalContext
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
@@ -110,7 +111,6 @@ class MainActivity : ComponentActivity() {
             sensorManager.registerListener(lightSensorListener, lightSensor, SensorManager.SENSOR_DELAY_UI)
 
 
-        val isWifiOn = getWifiStateFlow().collectAsStateWithLifecycle(true)
         CST8410_InClassExamplesTheme(content=
         {
             Scaffold(modifier = Modifier.fillMaxSize(),
@@ -220,7 +220,13 @@ fun previewDisplayLighting()
 @Composable
 fun DisplayLighting(lightingLevel: MutableFloatState, modifier: Modifier = Modifier)
 {
-    Text("The light is ${lightingLevel.floatValue}", lineHeight = 50.sp, fontSize = 50.sp)
+    val contxt = LocalContext.current
+    val isWifiConnected by contxt.getWifiStateFlow().collectAsStateWithLifecycle(initialValue = false)
+    val wifiOn = if (isWifiConnected == WifiState.Enabled) "On" else "Off"
+    Column {
+        Text("WIfi is: $wifiOn")
+        Text("The light is ${lightingLevel.floatValue}", lineHeight = 50.sp, fontSize = 50.sp)
+    }
 }
 
 
