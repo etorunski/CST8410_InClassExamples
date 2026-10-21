@@ -174,7 +174,7 @@ fun AppNavigation(
                             CoroutineScope(Dispatchers.IO).launch {
                                 //Do you stuff here in a background thread.
                                 try {
-                                    val response: HttpResponse = client.post("http://10.70.98.74:8080/firstTest")
+                                    val response: HttpResponse = client.post("http://10.0.2.2:8080/firstTest")
                                     {
                                         contentType(ContentType.Application.Json)
                                         setBody(LoginRequest("Jet", "Brains"))
