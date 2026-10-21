@@ -29,9 +29,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.flow.StateFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.startActivity
@@ -41,15 +38,47 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.cst8410_inclassexamples.ui.theme.CST8410_InClassExamplesTheme
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.android.Android
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+import io.ktor.client.*
+import io.ktor.client.call.body
+import io.ktor.client.engine.android.*
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
+@Serializable
+data class LoginRequest(
+    @SerialName("loginName")
+    var loginName: String?,
+    @SerialName("password")
+    var password: String?
+)
 
 class MainActivity : ComponentActivity() {
+
+
+
 
     val TAG = "MainActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val client = HttpClient(Android){
+            install(ContentNegotiation) {
+                json()
+            }
+        }
 
         Log.d(TAG, "onCreate() called")
 
@@ -61,7 +90,7 @@ class MainActivity : ComponentActivity() {
             Scaffold(modifier = Modifier.fillMaxSize(),
                 contentWindowInsets =WindowInsets.safeDrawing)
                 { innerPadding ->
-                    AppNavigation(modifier = Modifier.padding(innerPadding))
+                    AppNavigation(modifier = Modifier.padding(innerPadding), client)
                 }
             })
         }
@@ -98,45 +127,34 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun DisplayText(
-    textStateFlow: StateFlow<String>,
-    onTextChanged: (String) -> Unit,
+    onLogin:(lname:String, password:String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val textState by textStateFlow.collectAsStateWithLifecycle()
-
-    //initially showing, but changing it will redraw:
-    var isShowingDialog = remember {mutableStateOf(true)}
-    var agreeCollectData = remember{mutableStateOf(false) }
+    var loginName = remember{ mutableStateOf("")}
+    var password = remember{ mutableStateOf("")}
     Column {
-        Text(text = "The text is now: $textState", modifier = modifier)
+
         TextField(
-            label = { Text("Type Something here") },
-            value = textState,
-            onValueChange = onTextChanged
-        )
+            value = loginName.value,
+            onValueChange = { newValue -> loginName.value = newValue })
+        TextField(
+            value = password.value,
+            onValueChange = { newValue -> password.value = newValue })
+        Button(onClick = {
+            onLogin(loginName.value, password.value)
+
+        }){
+            Text("Login")
+        }
     }
 
-    if(isShowingDialog.value)
-    {
-        AlertDialog(
-            onDismissRequest = {isShowingDialog.value = false},
-            title = { Text(text = "Dialog Title") },
-            text = { Text("Here is a text ") },       //This below causes a recomposition
-            confirmButton = {  Button( onClick = {
-                agreeCollectData.value = true
-                isShowingDialog.value = false }) { Text("This is the Confirm Button")   }  },
-            dismissButton = {  Button( onClick = {
-                agreeCollectData.value = true
-                isShowingDialog.value = false }) {Text("This is the dismiss Button")    }  }
-        )
-    }
 
 }
 
 @Composable
 fun AppNavigation(
     modifier: Modifier = Modifier,
-    viewModel: MainViewModel = viewModel()
+    client: HttpClient
 ) {
     //This variable is the Stack of NavKeys:
     val backStack = rememberNavBackStack(HomeRoute)
@@ -152,16 +170,32 @@ fun AppNavigation(
             when (key) { // switch
                 is HomeRoute -> NavEntry(key) { //case, is ___ ->  XXXX
                     DisplayText(
-                        textStateFlow = viewModel.textState,
-                        onTextChanged = viewModel::onTextChanged
+                        onLogin = { lname, password ->
+                            CoroutineScope(Dispatchers.IO).launch {
+                                //Do you stuff here in a background thread.
+                                try {
+                                    val response: HttpResponse = client.post("http://10.70.98.74:8080/firstTest")
+                                    {
+                                        contentType(ContentType.Application.Json)
+                                        setBody(LoginRequest("Jet", "Brains"))
+                                    }
+                                    val body =  response.body<String>()
+                                    println(response.status)
+                                }
+                                catch(e:Exception)
+                                {
+                                    println(e.message)
+                                }
+
+                            }
+
+                        }
                     )
                 }
 
                 is SecondRoute -> NavEntry(key) {
                     DisplayText(
-                        textStateFlow = viewModel.textState,
-                        onTextChanged = viewModel::onTextChanged
-                    )
+                        onLogin = { lname, password ->  } )
                 }
                 else -> error("Unknown route: $key")
             }
