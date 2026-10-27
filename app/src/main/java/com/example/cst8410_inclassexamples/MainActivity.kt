@@ -35,14 +35,80 @@ import java.util.Locale
 import java.util.Locale.getDefault
 
 class MainActivity : ComponentActivity() {
-
-    fun printName(s1:String = "Hello", s2:String="World", stringModifier : (String)->String = { str:String -> str }):String
-    {
-        return stringModifier("String1 is $s1 and String2 is $s2")
-    }
+    //Step 1
+    private var bluetoothManager : BluetoothManager? = null
+    private var bluetoothAdapter: BluetoothAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+        if(bluetoothManager != null){
+            bluetoothAdapter = bluetoothManager?.getAdapter()
+        }
+
+        //Step 2
+        val scanner = bluetoothAdapter.bluetoothLeScanner
+
+        val settings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Fast scanning mode
+            .setReportDelay(0) // Notify devices immediately
+            .build()
+
+        val filters = listOf(
+            ScanFilter.Builder()
+                //.setDeviceName("MyBLEDevice") // Filter by device name
+                //.setServiceUuid(ParcelUuid(UUID.fromString("0000180D-0000-1000-8000-00805F9B34FB"))) // Filter by specific service, this should match the advertising UUID from the Server
+                .build()
+        )
+
+        //This function gets called every time a new device is detected:
+        val scanCallback = object : ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult?) {
+                super.onScanResult(callbackType, result)
+                result?.let {
+                    val device = it.device
+                    val deviceName = device.name
+                    val deviceAddress = device.address
+                    Log.d("BLE", "Device found: $deviceName ($deviceAddress)")
+                }
+            }
+            override fun onScanFailed(errorCode: Int) {
+                super.onScanFailed(errorCode)
+                //TODO: Something went wrong
+            }
+        }
+        val requestPermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+                    isGranted    ->
+                if (isGranted.values.all { it == true}) {
+
+                    ///Step 4
+                    isScanning = true
+                    scanner?.startScan(filters, settings, scanCallback)
+
+                    ///////////////end of Step 4
+                } else {
+                    // Explain to the user that the feature is unavailable because the
+                    // feature requires a permission that the user has denied. At the
+                    // same time, respect the user's decision. Don't link to system
+                    // settings in an effort to convince the user to change their
+                    // decision.
+                }
+            }
+
+        //This code launches the permission dialog. If the user clicks "OK", then line 84 runs
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) //SDK 31 or more
+        {
+            requestPermissionLauncher.launch(
+                arrayOf(Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN))
+        }
+        else //SDK 30 or less
+        {
+            requestPermissionLauncher.launch(
+                arrayOf(Manifest.permission.BLUETOOTH))
+        }
 
         enableEdgeToEdge()
         setContent {
@@ -51,10 +117,9 @@ class MainActivity : ComponentActivity() {
             {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = printName{ str:String -> str.lowercase(getDefault()) },
+                        name = "Eric",
                         modifier = Modifier.padding(innerPadding) ,
-
-                    ){ str:String -> str.lowercase()   }
+                    ){ str:String -> str.lowercase() }
                 }
             })
         }
@@ -67,25 +132,17 @@ fun Greeting(name: String,
              stringChanger:(String) -> String = { str:String -> str })
 {
   Column(verticalArrangement = Arrangement.SpaceAround) {
-
       Text(text = stringChanger(stringResource(R.string.hello_message)  ),
-          fontSize = 40.sp,    modifier = modifier )
+          fontSize = 40.sp, modifier = modifier )
 
-      Image( painter=painterResource(R.drawable.beach ), contentDescription = "Beach",
-          modifier=Modifier.fillMaxSize(0.25f)
-      )//contentDescription is for screen reader software
-
-        Button(onClick={ }, ){
-            Text("CLick me")
-        }
-
+      Button(onClick={ }, ){ Text("CLick me") }
 
       Button(onClick={ }, ){
           Image( painter=painterResource(R.drawable.beach ), contentDescription = "Beach",
               modifier=Modifier.fillMaxSize(0.25f)
-          )//
+          )
       }
-     }
+  }
 }
 
 @Preview(showBackground = true)
