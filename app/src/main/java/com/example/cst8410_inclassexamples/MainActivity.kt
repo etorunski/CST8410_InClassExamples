@@ -20,22 +20,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.TextField
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import com.example.cst8410_inclassexamples.ui.theme.CST8410_InClassExamplesTheme
+import kotlinx.coroutines.launch
 
 import java.util.Locale.getDefault
-
-
-
-data class ShoppingItem(var name:String, var sel:Boolean)
 
 
 class MainActivity : ComponentActivity() {
@@ -49,6 +49,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val dao = ShoppingDatabase.getDatabase(applicationContext).shoppingItemDao()
+
         enableEdgeToEdge()
         setContent {
 
@@ -56,7 +58,8 @@ class MainActivity : ComponentActivity() {
             {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
 
-                    val items = remember{ mutableStateListOf<ShoppingItem>()}
+                    val items by dao.getAllItems().collectAsState(initial = emptyList())
+                    val coroutineScope = rememberCoroutineScope()
 
                     var newItem = rememberSaveable { mutableStateOf("")}
                     Column(modifier = Modifier.padding(innerPadding)){
@@ -64,21 +67,30 @@ class MainActivity : ComponentActivity() {
                         Row{
                             TextField(value = newItem.value, onValueChange = { newStr -> newItem.value = newStr })
                             Button(onClick = {
-                                items.add( ShoppingItem( newItem.value, false));
-                                newItem.value="" }) {
+                                val itemName = newItem.value
+                                if (itemName.isNotBlank()) {
+                                    coroutineScope.launch {
+                                        dao.insertItem(ShoppingItem(itemName, false))
+                                    }
+                                    newItem.value = ""
+                                }
+                            }) {
                                 Text("Add item")
                             }
                         }
 
-                        //then we draw the items in the arraylist
+                        //then we draw the items in the database
                         LazyColumn {
 
-                            items(items.size) { index ->
+                            items(items, key = { it.id }) { item ->
                                 Row(horizontalArrangement = Arrangement.SpaceBetween,
                                     modifier=Modifier.fillMaxWidth()){
-                                    Text(text = "Item: ${items[index].name}")
-                                    Checkbox(checked = items[index].sel, onCheckedChange = {
-                                        sel -> items[index] = items[index].copy(sel = sel)
+                                    Text(text = "Item: ${item.name}")
+                                    Checkbox(checked = item.sel, onCheckedChange = {
+                                        sel ->
+                                        coroutineScope.launch {
+                                            dao.updateItem(item.copy(sel = sel))
+                                        }
                                     })
                                 }
                             }

@@ -10,7 +10,7 @@ kotlin = "2.2.10"
 composeBom = "2026.02.01"
 securityCrypto = "1.1.0"
 ui = "1.12.1"
-room = "2.6.1"
+room = "2.8.5"
 ksp = "2.3.14"
 
 [libraries]
