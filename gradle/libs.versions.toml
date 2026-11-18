@@ -1,5 +1,5 @@
 [versions]
-agp = "9.4.0"
+agp = "9.5.1"
 coreKtx = "1.19.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -11,7 +11,7 @@ composeBom = "2026.02.01"
 securityCrypto = "1.1.0"
 ui = "1.12.1"
 room = "2.6.1"
-ksp = "2.2.10-1.0.31"
+ksp = "2.3.14"
 
 [libraries]
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
@@ -36,5 +36,6 @@ androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = 
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
