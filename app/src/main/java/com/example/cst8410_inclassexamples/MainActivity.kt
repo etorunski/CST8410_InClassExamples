@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -17,12 +16,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import com.example.cst8410_inclassexamples.ui.theme.CST8410_InClassExamplesTheme
 
 import java.util.Locale.getDefault
+
+
+
+data class ShoppingItem(var name:String, var sel:Boolean)
+
 
 class MainActivity : ComponentActivity() {
 
@@ -41,11 +55,37 @@ class MainActivity : ComponentActivity() {
             CST8410_InClassExamplesTheme(content=
             {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = printName{ str:String -> str.lowercase(getDefault()) },
-                        modifier = Modifier.padding(innerPadding) ,
 
-                    ){ str:String -> str.lowercase()   }
+                    val items = remember{ mutableStateListOf<ShoppingItem>()}
+
+                    var newItem = rememberSaveable { mutableStateOf("")}
+                    Column(modifier = Modifier.padding(innerPadding)){
+                        //This row is for adding new items
+                        Row{
+                            TextField(value = newItem.value, onValueChange = { newStr -> newItem.value = newStr })
+                            Button(onClick = {
+                                items.add( ShoppingItem( newItem.value, false));
+                                newItem.value="" }) {
+                                Text("Add item")
+                            }
+                        }
+
+                        //then we draw the items in the arraylist
+                        LazyColumn {
+
+                            items(items.size) { index ->
+                                Row(horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier=Modifier.fillMaxWidth()){
+                                    Text(text = "Item: ${items[index].name}")
+                                    Checkbox(checked = items[index].sel, onCheckedChange = {
+                                        sel -> items[index] = items[index].copy(sel = sel)
+                                    })
+                                }
+                            }
+                        }
+                    }
+
+
                 }
             })
         }
@@ -57,16 +97,19 @@ fun Greeting(name: String,
              modifier: Modifier = Modifier,
              stringChanger:(String) -> String = { str:String -> str })
 {
+    var text = remember{ mutableStateOf("Hello")}
   Column(verticalArrangement = Arrangement.SpaceAround) {
 
-      Text(text = stringChanger(stringResource(R.string.hello_message)  ),
+      Text(text = text.value  ,
           fontSize = 40.sp,    modifier = modifier )
 
       Image( painter=painterResource(R.drawable.beach ), contentDescription = "Beach",
           modifier=Modifier.fillMaxSize(0.25f)
       )//contentDescription is for screen reader software
 
-        Button(onClick={ }, ){
+        Button(onClick={
+            text.value = "You clicked on me"
+        }, ){
             Text("CLick me")
         }
 
